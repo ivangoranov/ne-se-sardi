@@ -113,24 +113,29 @@ def check_capture(
 ) -> Optional[Tuple[str, int]]:
     """
     Check if moving to new_position captures an opponent's piece.
+    new_position is in player-relative coordinates (0-39 for board positions).
     Returns (captured_player_id, captured_piece_index) or None
     """
     # Can't capture in finish area
     if new_position >= BOARD_SIZE:
         return None
     
+    # Convert moving player's new position to absolute board position
+    moving_abs_pos = get_absolute_position(new_position, moving_player_color)
+    
     for player_id, (color, pieces) in all_players_pieces.items():
         if color == moving_player_color:
             continue
         
-        # Convert opponent's pieces to absolute positions
+        # Check each opponent's piece
         for idx, piece_pos in enumerate(pieces):
+            # Skip pieces at home or in finish area
             if piece_pos < 0 or piece_pos >= BOARD_SIZE:
                 continue
-            abs_pos = get_absolute_position(piece_pos, color)
-            moving_abs_pos = get_absolute_position(new_position, moving_player_color)
+            # Convert opponent's piece position to absolute board position
+            opponent_abs_pos = get_absolute_position(piece_pos, color)
             
-            if abs_pos == moving_abs_pos:
+            if opponent_abs_pos == moving_abs_pos:
                 return (player_id, idx)
     
     return None

@@ -61,6 +61,6 @@ export const api = {
 
   // Skip turn
   skipTurn: async (gameId: string, playerId: string): Promise<void> => {
-    await axios.post(`${API_BASE}/games/${gameId}/skip-turn?player_id=${playerId}`);
+    await axios.post(`${API_BASE}/games/${gameId}/skip-turn`, { player_id: playerId });
   },
 };

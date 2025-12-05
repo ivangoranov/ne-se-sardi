@@ -83,6 +83,10 @@ class MoveResponse(BaseModel):
     message: str
 
 
+class SkipTurnRequest(BaseModel):
+    player_id: UUID
+
+
 class WebSocketMessage(BaseModel):
     type: str
     data: dict

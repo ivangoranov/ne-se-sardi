@@ -4,10 +4,10 @@ import { api } from '../api';
 import type { Game } from '../types';
 
 const COLORS = {
-  red: { bg: 'bg-red-500', text: 'text-red-800', light: 'bg-red-100' },
-  blue: { bg: 'bg-blue-500', text: 'text-blue-800', light: 'bg-blue-100' },
-  green: { bg: 'bg-green-500', text: 'text-green-800', light: 'bg-green-100' },
-  yellow: { bg: 'bg-yellow-400', text: 'text-yellow-800', light: 'bg-yellow-100' },
+  red: { bg: 'bg-red-500', text: 'text-red-800', light: 'bg-red-100', border: 'border-red-300' },
+  blue: { bg: 'bg-blue-500', text: 'text-blue-800', light: 'bg-blue-100', border: 'border-blue-300' },
+  green: { bg: 'bg-green-500', text: 'text-green-800', light: 'bg-green-100', border: 'border-green-300' },
+  yellow: { bg: 'bg-yellow-400', text: 'text-yellow-800', light: 'bg-yellow-100', border: 'border-yellow-300' },
 };
 
 const LobbyPage: React.FC = () => {
@@ -124,7 +124,7 @@ const LobbyPage: React.FC = () => {
               return (
                 <div
                   key={player.id}
-                  className={`p-4 rounded-xl ${colorConfig.light} border-2 border-${player.color}-300 transform hover:scale-105 transition-transform`}
+                  className={`p-4 rounded-xl ${colorConfig.light} border-2 ${colorConfig.border} transform hover:scale-105 transition-transform`}
                 >
                   <div className="flex items-center gap-2">
                     <div className={`w-10 h-10 rounded-full ${colorConfig.bg} shadow-md flex items-center justify-center`}>

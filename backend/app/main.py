@@ -1,3 +1,4 @@
+import os
 import random
 import string
 from typing import Dict, List
@@ -12,7 +13,7 @@ from .database import get_db, engine, Base
 from .models import Game, Player, Move, GameStatus, PlayerColor
 from .schemas import (
     GameCreate, GameJoin, GameResponse, PlayerResponse,
-    DiceRoll, DiceRollResponse, MoveRequest, MoveResponse
+    DiceRoll, DiceRollResponse, MoveRequest, MoveResponse, SkipTurnRequest
 )
 from . import game_logic
 
@@ -33,10 +34,11 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS middleware
+# CORS middleware - configurable via environment variable
+CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -310,7 +312,7 @@ def make_move(move_data: MoveRequest, db: Session = Depends(get_db)):
 
 
 @app.post("/api/games/{game_id}/skip-turn")
-def skip_turn(game_id: UUID, player_id: UUID, db: Session = Depends(get_db)):
+def skip_turn(game_id: UUID, skip_data: SkipTurnRequest, db: Session = Depends(get_db)):
     """Skip turn when no valid moves available"""
     game = db.query(Game).filter(Game.id == game_id).first()
     
@@ -319,7 +321,7 @@ def skip_turn(game_id: UUID, player_id: UUID, db: Session = Depends(get_db)):
     
     current_player = game.players[game.current_player_index]
     
-    if current_player.id != player_id:
+    if current_player.id != skip_data.player_id:
         raise HTTPException(status_code=400, detail="Not your turn")
     
     game.current_player_index = (game.current_player_index + 1) % len(game.players)
