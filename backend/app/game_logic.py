@@ -61,24 +61,18 @@ def can_move_piece(
     player_color: PlayerColor,
     all_pieces: List[int]
 ) -> Tuple[bool, int]:
-    """
-    Check if a piece can move with given dice value.
-    Returns (can_move, new_position)
-    """
+    """Check if a piece can move with given dice value. Returns (can_move, new_position)."""
     # Piece is at home
     if piece_position == -1:
         if dice_value == 6:
-            # Can move to start position
+            # Can move to start position; allow stacking with own pieces on start
             new_pos = 0
-            # Check if own piece is blocking
-            if new_pos in all_pieces:
-                return False, -1
             return True, new_pos
         return False, -1
-    
+
     # Piece is on the board or in finish area
     new_position = piece_position + dice_value
-    
+
     # Check if entering or in finish area
     if piece_position < BOARD_SIZE and new_position >= BOARD_SIZE:
         # Entering finish area
@@ -86,23 +80,23 @@ def can_move_piece(
         if finish_pos > BOARD_SIZE + FINISH_TRACK_SIZE - 1:
             # Overshooting the finish - can't move
             return False, -1
-        # Check for own pieces in finish area
+        # Still forbid stacking in finish area
         if finish_pos in all_pieces:
             return False, -1
         return True, finish_pos
-    
+
     # Already in finish area
     if piece_position >= BOARD_SIZE:
         if new_position > BOARD_SIZE + FINISH_TRACK_SIZE - 1:
             return False, -1
+        # Still forbid stacking in finish area
         if new_position in all_pieces:
             return False, -1
         return True, new_position
-    
-    # Normal move on the board
+
+    # Normal move on the main board: allow stacking with own pieces
     new_position = new_position % BOARD_SIZE
-    if new_position in all_pieces:
-        return False, -1
+    # Do NOT check own pieces here, only captures are handled separately
     return True, new_position
 
 

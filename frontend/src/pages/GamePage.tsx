@@ -34,7 +34,9 @@ const GamePage: React.FC = () => {
   }, [code, navigate]);
 
   useEffect(() => {
-    fetchGame();
+    void (async () => {
+      await fetchGame();
+    })();
     const interval = setInterval(fetchGame, 2000);
     return () => clearInterval(interval);
   }, [fetchGame]);
@@ -77,14 +79,14 @@ const GamePage: React.FC = () => {
   };
 
   const handlePieceClick = async (_: number, pieceIndex: number) => {
-    if (!game || !playerId || !diceValue) return;
+    if (!game || !playerId || !diceValue || !isMyTurn || !hasRolled) return;
 
     const move = validMoves.find(m => m.piece_index === pieceIndex);
     if (!move) return;
 
     try {
       const result = await api.makeMove(game.id, playerId, pieceIndex, diceValue);
-      
+
       if (result.success) {
         if (result.captured) {
           setMessage('⚔️ Уби противникова пионка!');
@@ -94,17 +96,14 @@ const GamePage: React.FC = () => {
 
         if (result.winner_id) {
           setShowWinner(true);
+        } else if (diceValue === 6) {
+          // Информативно съобщение за шестица; реалният ред идва от бекенда
+          setMessage('🎉 Хвърли 6! Играй пак, ако още е твой ред.');
         }
 
-        // If rolled 6, can roll again
-        if (diceValue === 6 && !result.winner_id) {
-          setMessage('🎉 Хвърли 6! Играй пак!');
-          setHasRolled(false);
-          setDiceValue(null);
-        } else {
-          setHasRolled(false);
-          setDiceValue(null);
-        }
+        // Винаги чистим локалното състояние за хода и дърпаме ново game състояние
+        setHasRolled(false);
+        setDiceValue(null);
         setValidMoves([]);
         fetchGame();
       }
