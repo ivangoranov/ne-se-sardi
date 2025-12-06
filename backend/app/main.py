@@ -12,7 +12,9 @@ from sqlalchemy.orm import Session
 from .database import get_db, engine, Base
 from .models import Game, Player, Move, GameStatus, PlayerColor
 from .schemas import (
-    GameCreate, GameJoin, GameResponse, PlayerResponse,
+    GameCreate, GameJoin, GameResponse,
+    # PlayerResponse is kept for future API extensions (e.g., player details endpoint)
+    PlayerResponse,
     DiceRoll, DiceRollResponse, MoveRequest, MoveResponse, SkipTurnRequest
 )
 from . import game_logic
@@ -66,6 +68,8 @@ class ConnectionManager:
                 try:
                     await connection.send_json(message)
                 except Exception:
+                    # Silently ignore send failures - connection may have closed
+                    # The disconnect handler will clean up stale connections
                     pass
 
 
