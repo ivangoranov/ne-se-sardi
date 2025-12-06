@@ -39,6 +39,9 @@ services:
       - "5173:5173"
     depends_on:
       - backend
+    environment:
+      VITE_API_TARGET: http://backend:8000
+      VITE_WS_TARGET: ws://backend:8000
     volumes:
       - ./frontend:/app
       - /app/node_modules
