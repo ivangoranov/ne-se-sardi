@@ -9,6 +9,7 @@ interface GameBoardProps {
 }
 
 const BOARD_SIZE = 40;
+const CELL_SIZE = 28;
 
 // Starting positions for each color (where pieces enter the track)
 const START_POSITIONS: Record<string, number> = {
@@ -16,6 +17,14 @@ const START_POSITIONS: Record<string, number> = {
   blue: 10,
   green: 20,
   yellow: 30,
+};
+
+// Color definitions
+const COLORS = {
+  red: { fill: '#dc2626', light: '#dc2626' },
+  blue: { fill: '#2563eb', light: '#2563eb' },
+  green: { fill: '#16a34a', light: '#16a34a' },
+  yellow: { fill: '#eab308', light: '#eab308' },
 };
 
 // Calculate absolute board position from relative player position
@@ -55,20 +64,141 @@ const createLudoTrack = (): Record<number, { x: number; y: number }> => {
 
 const POSITIONS = createLudoTrack();
 
-// Finish track positions (colored paths leading to center)
+// Finish track positions (colored paths leading to center - 5 cells before center triangle)
 const FINISH_POSITIONS: Record<string, { x: number; y: number }[]> = {
-  red: [{ x: 7, y: 1 }, { x: 7, y: 2 }, { x: 7, y: 3 }, { x: 7, y: 4 }, { x: 7, y: 5 }, { x: 7, y: 6 }],
-  yellow: [{ x: 1, y: 7 }, { x: 2, y: 7 }, { x: 3, y: 7 }, { x: 4, y: 7 }, { x: 5, y: 7 }, { x: 6, y: 7 }],
-  green: [{ x: 7, y: 13 }, { x: 7, y: 12 }, { x: 7, y: 11 }, { x: 7, y: 10 }, { x: 7, y: 9 }, { x: 7, y: 8 }],
-  blue: [{ x: 13, y: 7 }, { x: 12, y: 7 }, { x: 11, y: 7 }, { x: 10, y: 7 }, { x: 9, y: 7 }, { x: 8, y: 7 }],
+  red: [{ x: 7, y: 1 }, { x: 7, y: 2 }, { x: 7, y: 3 }, { x: 7, y: 4 }, { x: 7, y: 5 }],
+  yellow: [{ x: 1, y: 7 }, { x: 2, y: 7 }, { x: 3, y: 7 }, { x: 4, y: 7 }, { x: 5, y: 7 }],
+  green: [{ x: 7, y: 13 }, { x: 7, y: 12 }, { x: 7, y: 11 }, { x: 7, y: 10 }, { x: 7, y: 9 }],
+  blue: [{ x: 13, y: 7 }, { x: 12, y: 7 }, { x: 11, y: 7 }, { x: 10, y: 7 }, { x: 9, y: 7 }],
 };
 
-// Home base positions (4 pieces in each corner)
+// Center position for finished pieces (position 45)
+const CENTER_POSITION = { x: 7, y: 7 };
+
+// Home base piece positions (centered 2x2 grid in each corner's white circle)
 const HOME_POSITIONS: Record<string, { x: number; y: number }[]> = {
-  red: [{ x: 1, y: 1 }, { x: 4, y: 1 }, { x: 1, y: 4 }, { x: 4, y: 4 }],
-  blue: [{ x: 10, y: 1 }, { x: 13, y: 1 }, { x: 10, y: 4 }, { x: 13, y: 4 }],
-  green: [{ x: 10, y: 10 }, { x: 13, y: 10 }, { x: 10, y: 13 }, { x: 13, y: 13 }],
-  yellow: [{ x: 1, y: 10 }, { x: 4, y: 10 }, { x: 1, y: 13 }, { x: 4, y: 13 }],
+  red: [{ x: 1.5, y: 1.5 }, { x: 3.5, y: 1.5 }, { x: 1.5, y: 3.5 }, { x: 3.5, y: 3.5 }],
+  blue: [{ x: 10.5, y: 1.5 }, { x: 12.5, y: 1.5 }, { x: 10.5, y: 3.5 }, { x: 12.5, y: 3.5 }],
+  green: [{ x: 10.5, y: 10.5 }, { x: 12.5, y: 10.5 }, { x: 10.5, y: 12.5 }, { x: 12.5, y: 12.5 }],
+  yellow: [{ x: 1.5, y: 10.5 }, { x: 3.5, y: 10.5 }, { x: 1.5, y: 12.5 }, { x: 3.5, y: 12.5 }],
+};
+
+// SVG path for wavy scalloped home base shape
+const createScallopedPath = (): string => {
+  // 8-point star-burst with smooth scalloped edges
+  // Size is 168x168 (6 cells * 28px)
+  const size = 168;
+  const center = size / 2;
+  const outerRadius = size / 2 - 4;
+  const innerRadius = size / 2 - 24;
+  const points = 8;
+
+  let path = '';
+
+  for (let i = 0; i < points; i++) {
+    const angle1 = (i * 2 * Math.PI) / points - Math.PI / 2;
+    const angle2 = ((i + 0.5) * 2 * Math.PI) / points - Math.PI / 2;
+    const angle3 = ((i + 1) * 2 * Math.PI) / points - Math.PI / 2;
+
+    const x1 = center + outerRadius * Math.cos(angle1);
+    const y1 = center + outerRadius * Math.sin(angle1);
+    const xMid = center + innerRadius * Math.cos(angle2);
+    const yMid = center + innerRadius * Math.sin(angle2);
+    const x2 = center + outerRadius * Math.cos(angle3);
+    const y2 = center + outerRadius * Math.sin(angle3);
+
+    if (i === 0) {
+      path += `M ${x1} ${y1} `;
+    }
+
+    // Quadratic bezier curve for scalloped edge
+    path += `Q ${xMid} ${yMid} ${x2} ${y2} `;
+  }
+
+  path += 'Z';
+  return path;
+};
+
+const SCALLOPED_PATH = createScallopedPath();
+
+// Home base SVG component
+const HomeBase: React.FC<{ color: 'red' | 'blue' | 'green' | 'yellow'; style: React.CSSProperties }> = ({ color, style }) => {
+  const colorFill = COLORS[color].fill;
+  const size = 168;
+  const center = size / 2;
+  const innerCircleRadius = 52;
+
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
+      style={{ position: 'absolute', ...style, pointerEvents: 'none' }}
+    >
+      {/* Scalloped outer shape */}
+      <path
+        d={SCALLOPED_PATH}
+        fill={colorFill}
+        stroke="#1a1a1a"
+        strokeWidth="3"
+      />
+      {/* White inner circle */}
+      <circle
+        cx={center}
+        cy={center}
+        r={innerCircleRadius}
+        fill={colorFill}
+        stroke="#1a1a1a"
+        strokeWidth="2"
+      />
+      {/* Inner white area for pieces */}
+      <circle
+        cx={center}
+        cy={center}
+        r={innerCircleRadius - 8}
+        fill="white"
+      />
+      {/* 4 piece spots */}
+      {[
+        { cx: center - 22, cy: center - 22 },
+        { cx: center + 22, cy: center - 22 },
+        { cx: center - 22, cy: center + 22 },
+        { cx: center + 22, cy: center + 22 },
+      ].map((pos, idx) => (
+        <circle
+          key={idx}
+          cx={pos.cx}
+          cy={pos.cy}
+          r={14}
+          fill={colorFill}
+        />
+      ))}
+    </svg>
+  );
+};
+
+// Center triangle component
+const CenterTriangles: React.FC = () => {
+  const size = CELL_SIZE * 3;
+  const center = size / 2;
+
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox={`0 0 ${size} ${size}`}
+      style={{ position: 'absolute', left: 6 * CELL_SIZE, top: 6 * CELL_SIZE, pointerEvents: 'none' }}
+    >
+      {/* Red triangle (top) */}
+      <polygon points={`${center},0 ${size},${center} ${center},${center}`} fill="#dc2626" stroke="#1a1a1a" strokeWidth="1" />
+      {/* Blue triangle (right) */}
+      <polygon points={`${size},${center} ${center},${size} ${center},${center}`} fill="#2563eb" stroke="#1a1a1a" strokeWidth="1" />
+      {/* Green triangle (bottom) */}
+      <polygon points={`${center},${size} 0,${center} ${center},${center}`} fill="#16a34a" stroke="#1a1a1a" strokeWidth="1" />
+      {/* Yellow triangle (left) */}
+      <polygon points={`0,${center} ${center},0 ${center},${center}`} fill="#eab308" stroke="#1a1a1a" strokeWidth="1" />
+    </svg>
+  );
 };
 
 const GameBoard: React.FC<GameBoardProps> = ({
@@ -77,7 +207,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
   validMoves,
   onPieceClick,
 }) => {
-  // Find piece at position
+  // Find piece at position (for home positions, use approximate matching)
   const getPieceAt = (x: number, y: number): { player: Player; playerIdx: number; pieceIdx: number; isValidMove: boolean } | null => {
     for (let playerIdx = 0; playerIdx < players.length; playerIdx++) {
       const player = players[playerIdx];
@@ -90,6 +220,10 @@ const GameBoard: React.FC<GameBoardProps> = ({
           const homePos = HOME_POSITIONS[player.color]?.[pieceIdx];
           pieceX = homePos?.x;
           pieceY = homePos?.y;
+        } else if (piecePos === 45) {
+          // Piece is in center (finished)
+          pieceX = CENTER_POSITION.x;
+          pieceY = CENTER_POSITION.y;
         } else if (piecePos >= 40) {
           const finishIndex = piecePos - 40;
           const finishPos = FINISH_POSITIONS[player.color]?.[finishIndex];
@@ -102,7 +236,7 @@ const GameBoard: React.FC<GameBoardProps> = ({
           pieceY = trackPos?.y;
         }
 
-        if (pieceX === x && pieceY === y) {
+        if (pieceX !== undefined && pieceY !== undefined && Math.abs(pieceX - x) < 0.1 && Math.abs(pieceY - y) < 0.1) {
           const isValidMove = playerIdx === currentPlayerIndex && validMoves.includes(pieceIdx);
           return { player, playerIdx, pieceIdx, isValidMove };
         }
@@ -125,178 +259,166 @@ const GameBoard: React.FC<GameBoardProps> = ({
       <button
         className={`
           w-5 h-5 rounded-full ${pieceColors[player.color]} border-2 border-white
-          flex items-center justify-center shadow-lg transform transition-all duration-200 z-10
+          flex items-center justify-center shadow-lg transform transition-all duration-200 z-20
           ${isValidMove ? 'animate-bounce ring-2 ring-yellow-300 cursor-pointer hover:scale-125' : ''}
         `}
         onClick={() => isValidMove && onPieceClick(playerIdx, pieceIdx)}
         disabled={!isValidMove}
-      >
-      </button>
+      />
     );
   };
 
-  // Check if a position is part of the home base boundary
-  const isHomeBoundary = (x: number, y: number, color: string): boolean => {
-    if (color === 'red') {
-      if (y === 0 && x >= 0 && x <= 5) return true;
-      if (y === 5 && x >= 0 && x <= 5) return true;
-      if (x === 0 && y >= 0 && y <= 5) return true;
-      if (x === 5 && y >= 0 && y <= 5) return true;
-    } else if (color === 'blue') {
-      if (y === 0 && x >= 9 && x <= 14) return true;
-      if (y === 5 && x >= 9 && x <= 14) return true;
-      if (x === 9 && y >= 0 && y <= 5) return true;
-      if (x === 14 && y >= 0 && y <= 5) return true;
-    } else if (color === 'green') {
-      if (y === 9 && x >= 9 && x <= 14) return true;
-      if (y === 14 && x >= 9 && x <= 14) return true;
-      if (x === 9 && y >= 9 && y <= 14) return true;
-      if (x === 14 && y >= 9 && y <= 14) return true;
-    } else if (color === 'yellow') {
-      if (y === 9 && x >= 0 && x <= 5) return true;
-      if (y === 14 && x >= 0 && x <= 5) return true;
-      if (x === 0 && y >= 9 && y <= 14) return true;
-      if (x === 5 && y >= 9 && y <= 14) return true;
+  // Render home piece overlay
+  const renderHomePieces = () => {
+    const homePieces: React.ReactNode[] = [];
+
+    for (let playerIdx = 0; playerIdx < players.length; playerIdx++) {
+      const player = players[playerIdx];
+      for (let pieceIdx = 0; pieceIdx < player.pieces.length; pieceIdx++) {
+        if (player.pieces[pieceIdx] === -1) {
+          const homePos = HOME_POSITIONS[player.color]?.[pieceIdx];
+          if (homePos) {
+            const isValidMove = playerIdx === currentPlayerIndex && validMoves.includes(pieceIdx);
+            homePieces.push(
+              <button
+                key={`home-${player.id}-${pieceIdx}`}
+                className={`
+                  absolute w-6 h-6 rounded-full border-2 border-white
+                  flex items-center justify-center shadow-lg transform transition-all duration-200 z-20
+                  ${isValidMove ? 'animate-bounce ring-2 ring-yellow-300 cursor-pointer hover:scale-125' : ''}
+                `}
+                style={{
+                  left: homePos.x * CELL_SIZE + CELL_SIZE / 2 - 12,
+                  top: homePos.y * CELL_SIZE + CELL_SIZE / 2 - 12,
+                  backgroundColor: COLORS[player.color].fill,
+                }}
+                onClick={() => isValidMove && onPieceClick(playerIdx, pieceIdx)}
+                disabled={!isValidMove}
+              />
+            );
+          }
+        }
+      }
     }
-    return false;
+
+    return homePieces;
+  };
+
+  // Check if cell is in home area (to hide from grid)
+  const isInHomeArea = (x: number, y: number): boolean => {
+    const isRedHome = x >= 0 && x <= 5 && y >= 0 && y <= 5;
+    const isBlueHome = x >= 9 && x <= 14 && y >= 0 && y <= 5;
+    const isGreenHome = x >= 9 && x <= 14 && y >= 9 && y <= 14;
+    const isYellowHome = x >= 0 && x <= 5 && y >= 9 && y <= 14;
+    return isRedHome || isBlueHome || isGreenHome || isYellowHome;
+  };
+
+  // Check if cell is center area
+  const isInCenterArea = (x: number, y: number): boolean => {
+    return x >= 6 && x <= 8 && y >= 6 && y <= 8;
   };
 
   return (
-    <div className="bg-amber-500 p-2 rounded-lg shadow-2xl border-4 border-gray-900">
-      <div className="grid grid-cols-[repeat(15,28px)] grid-rows-[repeat(15,28px)] gap-0">
-        {Array.from({ length: 15 }).map((_, y) =>
-          Array.from({ length: 15 }).map((_, x) => {
-            const cellKey = `${x}-${y}`;
-            const pieceInfo = getPieceAt(x, y);
-            
-            // Determine cell type and color
-            const isRedHome = x >= 0 && x <= 5 && y >= 0 && y <= 5;
-            const isBlueHome = x >= 9 && x <= 14 && y >= 0 && y <= 5;
-            const isGreenHome = x >= 9 && x <= 14 && y >= 9 && y <= 14;
-            const isYellowHome = x >= 0 && x <= 5 && y >= 9 && y <= 14;
-            
-            const isHorizontalTrack = (y === 6 || y === 7 || y === 8);
-            const isVerticalTrack = (x === 6 || x === 7 || x === 8);
-            const isTrack = (isHorizontalTrack || isVerticalTrack) && !((isRedHome || isBlueHome || isGreenHome || isYellowHome) && !(isHorizontalTrack && isVerticalTrack));
-            
-            const isCenter = x === 7 && y === 7;
-            
-            // Check if it's a home circle position
-            const isRedHomeCircle = HOME_POSITIONS.red.some(p => p.x === x && p.y === y);
-            const isBlueHomeCircle = HOME_POSITIONS.blue.some(p => p.x === x && p.y === y);
-            const isGreenHomeCircle = HOME_POSITIONS.green.some(p => p.x === x && p.y === y);
-            const isYellowHomeCircle = HOME_POSITIONS.yellow.some(p => p.x === x && p.y === y);
-            
-            // Check if it's a finish path
-            const isRedFinish = FINISH_POSITIONS.red.some(p => p.x === x && p.y === y);
-            const isBlueFinish = FINISH_POSITIONS.blue.some(p => p.x === x && p.y === y);
-            const isGreenFinish = FINISH_POSITIONS.green.some(p => p.x === x && p.y === y);
-            const isYellowFinish = FINISH_POSITIONS.yellow.some(p => p.x === x && p.y === y);
-            
-            // Starting cells (safe spots)
-            const isRedStart = x === 6 && y === 1;
-            const isBlueStart = x === 13 && y === 8;
-            const isGreenStart = x === 8 && y === 13;
-            const isYellowStart = x === 1 && y === 6;
+    <div className="bg-white p-3 rounded-lg shadow-2xl border-4 border-gray-900">
+      <div
+        className="relative"
+        style={{
+          width: 15 * CELL_SIZE,
+          height: 15 * CELL_SIZE,
+          backgroundColor: '#eab308' // Golden yellow background
+        }}
+      >
+        {/* Home base SVG overlays */}
+        <HomeBase color="red" style={{ left: 0, top: 0 }} />
+        <HomeBase color="blue" style={{ right: 0, top: 0 }} />
+        <HomeBase color="yellow" style={{ left: 0, bottom: 0 }} />
+        <HomeBase color="green" style={{ right: 0, bottom: 0 }} />
 
-            let cellContent = null;
-            let cellClass = 'w-7 h-7 flex items-center justify-center';
+        {/* Center triangles */}
+        <CenterTriangles />
 
-            // Center triangular home - with colored triangles
-            if (isCenter) {
-              return (
-                <div key={cellKey} className="w-7 h-7 flex items-center justify-center bg-white relative overflow-hidden">
-                  <svg viewBox="0 0 100 100" className="w-full h-full">
-                    <polygon points="50,0 100,50 50,50" fill="#ef4444" />
-                    <polygon points="100,50 50,100 50,50" fill="#22c55e" />
-                    <polygon points="50,100 0,50 50,50" fill="#3b82f6" />
-                    <polygon points="0,50 50,0 50,50" fill="#eab308" />
-                  </svg>
-                </div>
-              );
-            }
-            
-            // Home areas (colored backgrounds with star-burst shape)
-            if (isRedHome && !isTrack) {
-              const isBoundary = isHomeBoundary(x, y, 'red');
-              if (isRedHomeCircle) {
-                cellClass = 'w-7 h-7 flex items-center justify-center bg-red-600';
-                cellContent = pieceInfo ? renderPiece(pieceInfo) : <div className="w-5 h-5 rounded-full bg-white border border-gray-800 shadow-inner"></div>;
-              } else {
-                cellClass = `w-7 h-7 flex items-center justify-center bg-red-600 ${isBoundary ? 'border border-gray-900' : ''}`;
+        {/* Grid cells for track */}
+        <div className="absolute inset-0 grid grid-cols-[repeat(15,28px)] grid-rows-[repeat(15,28px)]">
+          {Array.from({ length: 15 }).map((_, y) =>
+            Array.from({ length: 15 }).map((_, x) => {
+              const cellKey = `${x}-${y}`;
+
+              // Skip home areas and center - they're rendered as overlays
+              if (isInHomeArea(x, y)) {
+                return <div key={cellKey} className="w-7 h-7" />;
               }
-            }
-            else if (isBlueHome && !isTrack) {
-              const isBoundary = isHomeBoundary(x, y, 'blue');
-              if (isBlueHomeCircle) {
-                cellClass = 'w-7 h-7 flex items-center justify-center bg-blue-600';
-                cellContent = pieceInfo ? renderPiece(pieceInfo) : <div className="w-5 h-5 rounded-full bg-white border border-gray-800 shadow-inner"></div>;
-              } else {
-                cellClass = `w-7 h-7 flex items-center justify-center bg-blue-600 ${isBoundary ? 'border border-gray-900' : ''}`;
+
+              if (isInCenterArea(x, y)) {
+                return <div key={cellKey} className="w-7 h-7" />;
               }
-            }
-            else if (isGreenHome && !isTrack) {
-              const isBoundary = isHomeBoundary(x, y, 'green');
-              if (isGreenHomeCircle) {
-                cellClass = 'w-7 h-7 flex items-center justify-center bg-green-600';
-                cellContent = pieceInfo ? renderPiece(pieceInfo) : <div className="w-5 h-5 rounded-full bg-white border border-gray-800 shadow-inner"></div>;
-              } else {
-                cellClass = `w-7 h-7 flex items-center justify-center bg-green-600 ${isBoundary ? 'border border-gray-900' : ''}`;
+
+              const isHorizontalTrack = (y === 6 || y === 7 || y === 8);
+              const isVerticalTrack = (x === 6 || x === 7 || x === 8);
+              const isTrack = isHorizontalTrack || isVerticalTrack;
+
+              // Check if it's a finish path
+              const isRedFinish = FINISH_POSITIONS.red.some(p => p.x === x && p.y === y);
+              const isBlueFinish = FINISH_POSITIONS.blue.some(p => p.x === x && p.y === y);
+              const isGreenFinish = FINISH_POSITIONS.green.some(p => p.x === x && p.y === y);
+              const isYellowFinish = FINISH_POSITIONS.yellow.some(p => p.x === x && p.y === y);
+
+              const pieceInfo = getPieceAt(x, y);
+
+              if (!isTrack) {
+                // Yellow background for non-track areas
+                return <div key={cellKey} className="w-7 h-7 bg-yellow-500" />;
               }
-            }
-            else if (isYellowHome && !isTrack) {
-              const isBoundary = isHomeBoundary(x, y, 'yellow');
-              if (isYellowHomeCircle) {
-                cellClass = 'w-7 h-7 flex items-center justify-center bg-yellow-400';
-                cellContent = pieceInfo ? renderPiece(pieceInfo) : <div className="w-5 h-5 rounded-full bg-white border border-gray-800 shadow-inner"></div>;
-              } else {
-                cellClass = `w-7 h-7 flex items-center justify-center bg-yellow-400 ${isBoundary ? 'border border-gray-900' : ''}`;
-              }
-            }
-            // Track cells
-            else if (isTrack) {
-              // Finish paths
+
+              // Finish paths with colored circles
               if (isRedFinish) {
-                cellClass = 'w-7 h-7 flex items-center justify-center bg-red-400 border border-gray-400';
-              } else if (isBlueFinish) {
-                cellClass = 'w-7 h-7 flex items-center justify-center bg-blue-400 border border-gray-400';
-              } else if (isGreenFinish) {
-                cellClass = 'w-7 h-7 flex items-center justify-center bg-green-400 border border-gray-400';
-              } else if (isYellowFinish) {
-                cellClass = 'w-7 h-7 flex items-center justify-center bg-yellow-300 border border-gray-400';
+                return (
+                  <div key={cellKey} className="w-7 h-7 flex items-center justify-center bg-white border border-gray-400">
+                    {pieceInfo ? renderPiece(pieceInfo) : (
+                      <div className="w-5 h-5 rounded-full bg-red-600 border border-gray-800" />
+                    )}
+                  </div>
+                );
               }
-              // Starting cells (colored safe spots)
-              else if (isRedStart) {
-                cellClass = 'w-7 h-7 flex items-center justify-center bg-red-300 border border-gray-400';
-              } else if (isBlueStart) {
-                cellClass = 'w-7 h-7 flex items-center justify-center bg-blue-300 border border-gray-400';
-              } else if (isGreenStart) {
-                cellClass = 'w-7 h-7 flex items-center justify-center bg-green-300 border border-gray-400';
-              } else if (isYellowStart) {
-                cellClass = 'w-7 h-7 flex items-center justify-center bg-yellow-200 border border-gray-400';
+              if (isBlueFinish) {
+                return (
+                  <div key={cellKey} className="w-7 h-7 flex items-center justify-center bg-white border border-gray-400">
+                    {pieceInfo ? renderPiece(pieceInfo) : (
+                      <div className="w-5 h-5 rounded-full bg-blue-600 border border-gray-800" />
+                    )}
+                  </div>
+                );
               }
-              // Regular track
-              else {
-                cellClass = 'w-7 h-7 flex items-center justify-center bg-white border border-gray-400';
+              if (isGreenFinish) {
+                return (
+                  <div key={cellKey} className="w-7 h-7 flex items-center justify-center bg-white border border-gray-400">
+                    {pieceInfo ? renderPiece(pieceInfo) : (
+                      <div className="w-5 h-5 rounded-full bg-green-600 border border-gray-800" />
+                    )}
+                  </div>
+                );
+              }
+              if (isYellowFinish) {
+                return (
+                  <div key={cellKey} className="w-7 h-7 flex items-center justify-center bg-white border border-gray-400">
+                    {pieceInfo ? renderPiece(pieceInfo) : (
+                      <div className="w-5 h-5 rounded-full bg-yellow-500 border border-gray-800" />
+                    )}
+                  </div>
+                );
               }
               
-              // Render piece on track
-              if (pieceInfo) {
-                cellContent = renderPiece(pieceInfo);
-              }
-            }
-            // Yellow background for empty areas
-            else {
-              cellClass = 'w-7 h-7 flex items-center justify-center bg-amber-500';
-            }
+              // Regular track cell
+              return (
+                <div key={cellKey} className="w-7 h-7 flex items-center justify-center bg-white border border-gray-400">
+                  {pieceInfo && renderPiece(pieceInfo)}
+                </div>
+              );
+            })
+          )}
+        </div>
 
-            return (
-              <div key={cellKey} className={cellClass}>
-                {cellContent}
-              </div>
-            );
-          })
-        )}
+        {/* Home pieces overlay */}
+        {renderHomePieces()}
       </div>
     </div>
   );

@@ -208,11 +208,31 @@ def roll_dice(roll_data: DiceRoll, db: Session = Depends(get_db)):
     if current_player.id != roll_data.player_id:
         raise HTTPException(status_code=400, detail="Not your turn")
     
+    # Check if player must skip turns (penalty for consecutive 6s)
+    if current_player.turns_to_skip and current_player.turns_to_skip > 0:
+        current_player.turns_to_skip -= 1
+        game.current_player_index = (game.current_player_index + 1) % len(game.players)
+        db.commit()
+        return DiceRollResponse(
+            value=0,
+            can_move=False,
+            valid_moves=[]
+        )
+
     dice_value = game_logic.roll_dice()
+
+    # Build opponent pieces dict for stack blocking check
+    opponent_pieces = {
+        p.color: list(p.pieces)
+        for p in game.players
+        if p.id != current_player.id
+    }
+
     valid_moves = game_logic.get_valid_moves(
         current_player.pieces,
         dice_value,
-        current_player.color
+        current_player.color,
+        opponent_pieces
     )
     
     return DiceRollResponse(
@@ -243,11 +263,20 @@ def make_move(move_data: MoveRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Invalid piece index")
     
     pieces = list(current_player.pieces)
+
+    # Build opponent pieces dict for stack blocking check
+    opponent_pieces = {
+        p.color: list(p.pieces)
+        for p in game.players
+        if p.id != current_player.id
+    }
+
     can_move, new_pos = game_logic.can_move_piece(
         pieces[piece_idx],
         move_data.dice_value,
         current_player.color,
-        pieces
+        pieces,
+        opponent_pieces
     )
     
     if not can_move:
@@ -297,12 +326,27 @@ def make_move(move_data: MoveRequest, db: Session = Depends(get_db)):
         game.winner_id = current_player.id
         winner_id = current_player.id
         message = f"{current_player.name} wins!"
+        # Reset consecutive sixes on game end
+        current_player.consecutive_sixes = 0
     else:
-        # Next player's turn (unless rolled 6)
-        if move_data.dice_value != 6:
+        # Handle consecutive 6s rule
+        if move_data.dice_value == 6:
+            current_player.consecutive_sixes = (current_player.consecutive_sixes or 0) + 1
+            if current_player.consecutive_sixes >= 2:
+                # Penalty: skip 4 turns
+                current_player.turns_to_skip = 4
+                current_player.consecutive_sixes = 0
+                game.current_player_index = (game.current_player_index + 1) % len(game.players)
+                message = "Two consecutive 6s! Must skip 4 turns."
+            else:
+                # Roll again on 6
+                message = "Rolled 6! Roll again."
+        else:
+            # Reset consecutive sixes counter and pass turn
+            current_player.consecutive_sixes = 0
             game.current_player_index = (game.current_player_index + 1) % len(game.players)
-        message = "Move successful"
-    
+            message = "Move successful"
+
     db.commit()
     
     return MoveResponse(

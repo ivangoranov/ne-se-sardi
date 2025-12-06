@@ -43,10 +43,14 @@ class Player(Base):
     game_id = Column(UUID(as_uuid=True), ForeignKey("games.id"), nullable=False)
     name = Column(String(50), nullable=False)
     color = Column(Enum(PlayerColor), nullable=False)
-    # Positions of 4 pieces: -1 = home, 0-39 = on board, 40-43 = in finish area
+    # Positions of 4 pieces: -1 = home, 0-39 = on board, 40-45 = in finish area (6 cells)
     pieces = Column(JSON, default=[-1, -1, -1, -1])
     order = Column(Integer, nullable=False)
     is_connected = Column(Boolean, default=True)
+    # Track consecutive 6s rolled
+    consecutive_sixes = Column(Integer, default=0)
+    # Turns to skip (penalty for rolling two 6s in a row)
+    turns_to_skip = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
 
     game = relationship("Game", back_populates="players", foreign_keys=[game_id])
