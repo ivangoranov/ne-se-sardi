@@ -1,0 +1,26 @@
+{
+  "TCP": {
+    "443": {
+      "HTTPS": true
+    }
+  },
+  "Web": {
+    "ne-se-sardi.carp-peacock.ts.net:443": {
+      "Handlers": {
+        "/": {
+          "Proxy": "http://frontend:5173"
+        },
+        "/api": {
+          "Proxy": "http://backend:8000"
+        },
+        "/ws": {
+          "Proxy": "http://backend:8000"
+        }
+      }
+    }
+  },
+  "AllowFunnel": {
+    "ne-se-sardi.carp-peacock.ts.net:443": true
+  }
+}
+
