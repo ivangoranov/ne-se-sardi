@@ -10,6 +10,7 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
     host: '0.0.0.0',
+    allowedHosts: ['ne-se-sardi.carp-peacock.ts.net'],
     port: 5173,
     proxy: {
       '/api': {
