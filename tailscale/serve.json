@@ -10,11 +10,11 @@
         "/": {
           "Proxy": "http://frontend:5173"
         },
-        "/api": {
-          "Proxy": "http://backend:8000"
+        "/api/": {
+          "Proxy": "http://backend:8000/api/"
         },
-        "/ws": {
-          "Proxy": "http://backend:8000"
+        "/ws/": {
+          "Proxy": "http://backend:8000/ws/"
         }
       }
     }
